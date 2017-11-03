@@ -1,0 +1,4 @@
+/data/yaml/salt/build.sh
+/data/yaml/salt/tag-salt.sh
+kubectl create -f /data/yaml/salt/salt-run.yaml
+

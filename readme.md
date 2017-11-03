@@ -1,0 +1,2 @@
+# Salt server with ssh
+

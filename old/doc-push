@@ -1,0 +1,3 @@
+kube-registry.kube-system.svc.cluster.local:31000/salt 
+
+docker push

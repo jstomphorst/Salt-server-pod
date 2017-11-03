@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: salt-server
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /data/salt-server
+    server: 10.0.2.59
+    readOnly: false
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: salt
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: salt-server
+  namespace: salt
+  labels:
+    k8s-app: salt-server
+spec:
+  accessModes:
+#    - ReadWriteOnce
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: salt-server-v0
+  namespace: salt
+  labels:
+    k8s-app: salt-server
+    version: v0
+spec:
+  replicas: 1
+  selector:
+    k8s-app: salt-server
+    version: v0
+  template:
+    metadata:
+      labels:
+        k8s-app: salt-server
+        version: v0
+    spec:
+      containers:
+      - name: salt-server
+        image: kube-registry.kube-system.svc.cluster.local:31000/salt:latest
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: salt-data
+          mountPath: /srv
+          subPath: srv
+        - name: salt-data
+          mountPath: /etc/salt
+          subPath: config-etc
+        ports:
+        - containerPort: 22
+          protocol: TCP
+        - containerPort: 4505
+          protocol: TCP
+        - containerPort: 4505
+          name: salt
+          protocol: TCP
+  #      command:
+  #      - /usr/bin/supervisord
+      volumes:
+      - name: salt-data
+        persistentVolumeClaim:
+          claimName: salt-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: salt-server
+  namespace: salt
+  labels:
+    k8s-app: salt-server
+spec:
+  selector:
+    k8s-app: salt-server
+  ports:
+  - name: port3
+    port: 22
+    nodePort: 30504
+    protocol: TCP
+  - name: port1
+    port: 4505
+    nodePort: 30505
+    protocol: TCP
+  - name: port2
+    port: 4506
+    nodePort: 30506
+    protocol: TCP
+  type: NodePort
+
+#30000-32767
